@@ -2,16 +2,30 @@ const express = require('express')
 const app = express()
 const cors = require('cors');
 require('dotenv').config();
+const admin = require("firebase-admin");
 const { MongoClient } = require('mongodb');
 const { query } = require('express');
-const port = process.env.PORT | 5000
+const port = process.env.PORT || 5000
+
+
+
+// const serviceAccount = require('/.doctors-portal-4a296-firebase-adminsdk.json');
+
+// admin.initializeApp({
+//     credential: admin.credential.cert(serviceAccount)
+// });
 
 app.use(cors());
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.iwf59.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
-
+async function verifyToken(req, res, next) {
+    if (req.headers?.authorization?.startWith('Bearer')) {
+        const token = req.headers.authorization.split(' ')[1]
+    }
+    next();
+}
 async function run() {
     try {
         await client.connect();
@@ -59,8 +73,9 @@ async function run() {
             res.json(result);
 
         })
-        app.put('/user/admin', async (req, res) => {
+        app.put('/user/admin', verifyToken, async (req, res) => {
             const user = req.body;
+            console.log('put', req.headers.authorization)
             const filter = { email: user.email };
             const updateDoc = { $set: { role: 'admin' } }
             const result = await userCollection.updateOne(filter, updateDoc);
